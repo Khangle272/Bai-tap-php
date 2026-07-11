@@ -1,0 +1,63 @@
+<html>
+
+<div id="message" class="message"></div>
+<form id="registerForm">
+    <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
+    <input type="email" id="email" name="email" placeholder="Email" required>
+    <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+    <input type="password" id="confirm_password" placeholder="Xác nhận mật khẩu" required>
+    <button type="submit">Đăng Ký</button>
+</form>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+        const messageDiv = document.getElementById('message');
+
+        messageDiv.className = 'message';
+        messageDiv.innerHTML = '';
+
+        if (password.length < 6) {
+            showMessage('Mật khẩu ít nhất phải 6 ký tự', 'error')
+            return;
+        }
+
+        if (password !== confirm_password) {
+            showMessage('Mật khẩu phải trùng khớp', 'error')
+            return;
+        }
+
+        const formData = new FormData(this);
+
+        fetch('register.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status == 'success') {
+                    showMessage(data.message, 'success');
+                    document.getElementById('registerForm').reset();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi: ', error);
+                showMessage("Không thể kết nối đến máy chủ", 'error');
+            })
+    });
+
+    function showMessage(msg, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = msg;
+        messageDiv.classList.add(type);
+    }
+</script>
+
+</html>

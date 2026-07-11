@@ -1,0 +1,66 @@
+<html>
+<table>
+    <thead>
+        <tr>
+            <th>Loại Tiền Tệ</th>
+            <th>Tỷ Giá</th>
+        </tr>
+    </thead>
+    <tbody id="exchange-rates-body">
+        <td colspan="2" class="loading">Đang tải dữ liệu</td>
+    </tbody>
+</table>
+
+<div class="status">
+    Cập nhật lần cuối: <span id="last-updated">Đang cập nhật...</span>
+</div>
+
+<script>
+    const targetCurrencies = ['VND', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'SGD'];
+
+    async function fetchAndRender() {
+        const tbody = document.getElementById('exchange-rates-body');
+        const timeSpan = document.getElementById('last-updated');
+        try {
+            const response = await fetch('api.php');
+            const data = await response.json();
+
+            if (data.result == "success") {
+                tbody.innerHTML = '';
+
+                for (const [currency, rate] of Object.entries(data.rates)) {
+                    if (targetCurrencies.includes(currency)) {
+                        const tr = document.createElement('tr');
+
+                        const tdCurrency = document.createElement('td');
+                        tdCurrency.innerHTML = `<strong>${currency}</strong>`;
+
+                        const tdRate = document.createElement('td');
+                        tdRate.textContent = new Intl.NumberFormat('vi-VN').format(rate);
+
+                        tr.appendChild(tdCurrency);
+                        tr.appendChild(tdRate);
+                        tbody.appendChild(tr);
+                    }
+                }
+
+                const now = new Date();
+                timeSpan.textContent = now.toLocaleTimeString('vi-VN');
+            } else {
+                throw new Error("Dữ liệu api trả về không thành công");
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu: ", error);
+            tbody.innerHTML = `<tr><td colspan="2" style="color: red; text-align: center;">Lỗi tải dữ liệu. Đang thử lại...</td></tr>`;
+        }
+
+        
+    }
+
+    fetchAndRender();
+
+    const update_interval = 100000; 
+    setInterval(fetchAndRender, update_interval)
+</script>
+
+</html>

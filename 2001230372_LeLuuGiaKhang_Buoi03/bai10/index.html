@@ -1,0 +1,104 @@
+<html>
+<input type="text" id="taskInput" placeholder="Nhập công việc mới...">
+<button id="addBtn">Thêm</button>
+
+<ul id="taskList"></ul>
+
+<script>
+    // Các element DOM
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const taskList = document.getElementById('taskList');
+
+    // Biến lưu trữ danh sách công việc trên Frontend
+    let tasks = [];
+
+    // 1. Hàm lấy dữ liệu từ PHP API khi khởi động
+    async function fetchTasks() {
+        try {
+            const response = await fetch('api.php');
+            tasks = await response.json();
+            renderTasks();
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu:', error);
+        }
+    }
+
+    // 2. Hàm lưu dữ liệu xuống PHP API
+    async function saveTasks() {
+        try {
+            await fetch('api.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(tasks)
+            });
+        } catch (error) {
+            console.error('Lỗi khi lưu dữ liệu:', error);
+        }
+    }
+
+    // 3. Hàm hiển thị danh sách ra màn hình
+    function renderTasks() {
+        taskList.innerHTML = ''; // Xóa danh sách cũ
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            if (task.completed) li.classList.add('completed');
+
+            // Chữ của công việc
+            const span = document.createElement('span');
+            span.className = 'task-text';
+            span.textContent = task.text;
+            // Bấm vào chữ để đánh dấu hoàn thành/chưa hoàn thành
+            span.onclick = () => toggleTask(index);
+
+            // Nút xóa
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = 'Xóa';
+            deleteBtn.onclick = () => deleteTask(index);
+
+            li.appendChild(span);
+            li.appendChild(deleteBtn);
+            taskList.appendChild(li);
+        });
+    }
+
+    // 4. Thêm công việc mới
+    function addTask() {
+        const text = taskInput.value.trim();
+        if (text !== '') {
+            // Thêm vào mảng tasks
+            tasks.push({ text: text, completed: false });
+            taskInput.value = ''; // Xóa ô input
+            renderTasks();        // Cập nhật giao diện
+            saveTasks();          // Lưu xuống server
+        }
+    }
+
+    // 5. Đánh dấu hoàn thành
+    function toggleTask(index) {
+        tasks[index].completed = !tasks[index].completed; // Đảo ngược trạng thái
+        renderTasks();
+        saveTasks();
+    }
+
+    // 6. Xóa công việc
+    function deleteTask(index) {
+        tasks.splice(index, 1); // Cắt bỏ phần tử khỏi mảng
+        renderTasks();
+        saveTasks();
+    }
+
+    // Lắng nghe sự kiện
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addTask(); // Hỗ trợ nhấn Enter để thêm
+    });
+
+    // Khởi chạy khi load trang
+    fetchTasks();
+</script>
+
+</html>
