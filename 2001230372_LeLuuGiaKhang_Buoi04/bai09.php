@@ -1,81 +1,65 @@
 <?php
-// Gọi file kết nối CSDL
+// Mở đầu thẻ PHP, yêu cầu PHP xử lý code bên trong
 require 'bai01.php';
 
-// Khởi tạo biến keyword rỗng và mảng students trống
+// Khởi tạo biến $keyword rỗng, dùng để lưu từ khóa tìm kiếm
 $keyword = '';
+// Khởi tạo mảng $students rỗng, dùng để lưu danh sách sinh viên
 $students = [];
 
-// Danh sách cột được phép sắp xếp (tránh SQL injection qua tham số sort)
-$allowed_sort_columns = ['name', 'email'];
-// Lấy cột sắp xếp từ URL; nếu không hợp lệ thì mặc định là 'id'
-$sort = isset($_GET['sort']) && in_array($_GET['sort'], $allowed_sort_columns) ? $_GET['sort'] : 'id';
-// Lấy thứ tự sắp xếp (ASC/DESC); mặc định là ASC
-$order = isset($_GET['order']) && strtolower($_GET['order']) === 'desc' ? 'DESC' : 'ASC';
-
-// Xác định thứ tự cho lần click tiếp theo (đảo ngược thứ tự hiện tại)
-$next_order = ($order === 'ASC') ? 'desc' : 'asc';
-
-// Nếu có từ khóa tìm kiếm (không rỗng sau khi trim)
-if (isset($_GET['keyword']) && trim($_GET['keyword']) !== '') {
+// Kiểm tra nếu có tham số 'keyword' được gửi qua URL (method GET)
+if (isset($_GET['keyword'])) {
+    // trim(): loại bỏ khoảng trắng thừa ở đầu và cuối chuỗi nhập vào
     $keyword = trim($_GET['keyword']);
 
-    // Câu SQL tìm kiếm theo tên và sắp xếp
-    $sql = "SELECT * FROM students WHERE name LIKE :keyword ORDER BY $sort $order";
+    // Câu truy vấn SQL: tìm sinh viên có tên chứa từ khóa (LIKE)
+    $sql = 'select * from students where name like :keyword';
+    // prepare(): tạo prepared statement để tránh SQL injection
     $stmt = $pdo->prepare($sql);
 
-    // Gán giá trị cho tham số keyword (thêm dấu % để tìm kiếm LIKE)
+    // bindValue(): gán giá trị cho tham số :keyword, thêm dấu % để tìm kiếm LIKE
     $stmt->bindValue(':keyword', "%$keyword%", PDO::PARAM_STR);
+    // execute(): thực thi câu truy vấn đã chuẩn bị
     $stmt->execute();
 
-    // Lấy tất cả kết quả
+    // fetchAll(): lấy tất cả kết quả dưới dạng mảng kết hợp (FETCH_ASSOC)
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Nếu không có từ khóa, lấy tất cả sinh viên và sắp xếp
-    $sql = "SELECT * FROM students ORDER BY $sort $order";
-    $stmt = $pdo->query($sql);
+    // Nếu không có từ khóa, lấy tất cả sinh viên từ bảng students
+    $stmt = $pdo->query("select * from students");
+    // fetchAll(): lấy toàn bộ kết quả dưới dạng mảng kết hợp
     $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+// Kết thúc thẻ PHP, chuyển sang hiển thị HTML
 ?>
 
-<!-- Form tìm kiếm, giữ lại tham số sort/order nếu có -->
+<!-- Form tìm kiếm, gửi dữ liệu bằng phương thức GET đến chính trang hiện tại (action rỗng) -->
 <form method="GET" action="">
+    <!-- Nhãn ô nhập liệu -->
     <label>Nhập tên sinh viên: </label>
-    <?php if (isset($_GET['sort'])): ?>
-        <!-- Trường ẩn giữ lại cột sắp xếp và thứ tự khi tìm kiếm -->
-        <input type="hidden" name="sort" value="<?= htmlspecialchars($_GET['sort']) ?>">
-        <input type="hidden" name="order" value="<?= htmlspecialchars($_GET['order']) ?>">
-    <?php endif; ?>
+    <!-- Ô nhập text, name="keyword", value giữ lại từ khóa đã nhập, htmlspecialchars() chống XSS -->
     <input type="text" name="keyword" value="<?= htmlspecialchars($keyword) ?>" placeholder="Nhập tên cần tìm...">
+    <!-- Nút submit gửi form -->
     <button type="submit">Tìm kiếm</button>
 </form>
 
-<!-- Bảng hiển thị danh sách sinh viên với chức năng sắp xếp -->
+<!-- Bảng hiển thị danh sách sinh viên, viền 1px, cellpadding 5px -->
 <table border="1" cellpadding="5">
+    <!-- Dòng tiêu đề bảng -->
     <tr>
-        <!-- Cột Họ tên - click để sắp xếp, hiển thị mũi tên ▲/▼ nếu đang sắp xếp theo cột này -->
-        <th>
-            <a href="?sort=name&order=<?= $next_order ?>&keyword=<?= urlencode($keyword) ?>"
-                style="text-decoration: none; color: black;">
-                Họ và tên <?= ($sort === 'name') ? ($order === 'ASC' ? '▲' : '▼') : '' ?>
-            </a>
-        </th>
-        <!-- Cột Email - click để sắp xếp -->
-        <th>
-            <a href="?sort=email&order=<?= $next_order ?>&keyword=<?= urlencode($keyword) ?>"
-                style="text-decoration: none; color: black;">
-                Email <?= ($sort === 'email') ? ($order === 'ASC' ? '▲' : '▼') : '' ?>
-            </a>
-        </th>
+        <th>Họ và tên</th>
+        <th>Email</th>
         <th>Số điện thoại</th>
         <th>Sinh Nhật</th>
     </tr>
 
-    <!-- Nếu có dữ liệu thì duyệt và hiển thị từng dòng -->
+    <!-- Kiểm tra nếu mảng $students không rỗng thì hiển thị dữ liệu -->
     <?php if (!empty($students)): ?>
+        <!-- foreach: lặp qua từng sinh viên trong mảng $students, mỗi phần tử gán vào $row -->
         <?php foreach ($students as $row): ?>
             <tr>
                 <td>
+                    <!-- = là echo, htmlspecialchars() chuyển ký tự đặc biệt thành HTML entities để an toàn khi hiển thị -->
                     <?= htmlspecialchars($row['name']) ?>
                 </td>
                 <td>
@@ -85,14 +69,17 @@ if (isset($_GET['keyword']) && trim($_GET['keyword']) !== '') {
                     <?= htmlspecialchars($row['phone']) ?>
                 </td>
                 <td>
-                    <?= htmlspecialchars($row['birthday']) ?>
+                    <!-- Hiển thị ngày sinh, không dùng htmlspecialchars (dữ liệu ngày không chứa ký tự đặc biệt) -->
+                    <?= ($row['birthday']) ?>
                 </td>
             </tr>
         <?php endforeach; ?>
     <?php else: ?>
-        <!-- Thông báo khi không tìm thấy kết quả -->
+        <!-- Trường hợp không có sinh viên nào, hiển thị dòng thông báo -->
         <tr>
+            <!-- colspan="4": trải dài qua 4 cột, căn giữa văn bản -->
             <td colspan="4" style="text-align: center;">Không tìm thấy sinh viên nào phù hợp.</td>
         </tr>
     <?php endif; ?>
+    <!-- Kết thúc thẻ PHP -->
 </table>
