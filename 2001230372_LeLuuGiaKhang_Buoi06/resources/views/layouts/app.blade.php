@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title','Lab 01')</title>
+    <title>@yield('title', 'Lab 01')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         table {
@@ -29,16 +29,8 @@
 </head>
 
 <body>
-    <header>
-        <h1>Laravel 13 – Lab 06</h1>
-        <nav>
-            <a href="/hello">Hello</a> |
-            <a href="/students">Students</a> |
+    @include('partials.header')
 
-            <a href="/time">Time</a>
-        </nav>
-        <hr>
-    </header>
     <main>
         @yield('content')
     </main>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AboutController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StudentController;
 
@@ -8,7 +9,7 @@ Route::get('/', function () {
 });
 
 Route::get('/hello', function () {
-    return "Xin chao laravel 13";
+    return "Xin chao Laravel 13";
 });
 
 Route::get("/time", function () {
@@ -23,3 +24,13 @@ Route::get("/sum/{a}/{b}", function ($a, $b) {
 });
 
 Route::get("/students", [studentController::class, "index"]);
+
+Route::get("/students/db", [studentController::class, "indexDB"]);
+
+Route::get("/students/combined", [studentController::class, "combined"]);
+
+Route::get("/students/create", [studentController::class, "create"]);
+
+Route::post("/students", [studentController::class, "store"]);
+
+Route::get("/about", [AboutController::class, "index"]);
